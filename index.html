@@ -647,7 +647,7 @@ async function saveWorkOrder(){
 
 async function saveCardOrder(){
   if(!isAdmin())return;
-  try{await sb.from('work_order').upsert({id:1,card_order:cardOrder},{onConflict:'id'})}catch{}
+  try{await sb.from('work_order').upsert({id:1,card_order:cardOrder},{onConflict:'id'})}catch(e){console.error('saveCardOrder:',e)}
 }
 
 async function logActivity(action,details){
