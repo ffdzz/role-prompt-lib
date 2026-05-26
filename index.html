@@ -37,7 +37,7 @@ body{background:#f4f3fa;color:#1e1b3a;font-family:-apple-system,BlinkMacSystemFo
 .nav-user{display:flex;align-items:center;gap:8px}
 .nav-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a855f7);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;overflow:hidden;flex-shrink:0}
 .nav-avatar img{width:100%;height:100%;object-fit:cover}
-.nav-username{font-size:13px;font-weight:600;color:#3a3460;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-username{display:none}
 .btn-add{display:flex;align-items:center;gap:6px;padding:9px 18px;border-radius:10px;border:none;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 3px 12px rgba(124,58,237,.35);transition:all .2s;white-space:nowrap}
 .btn-add:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,58,237,.4)}
 .btn-nav{padding:8px 14px;border-radius:10px;border:1.5px solid #e2ddf5;background:#fff;color:#9b8ec4;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
@@ -151,8 +151,8 @@ body{background:#f4f3fa;color:#1e1b3a;font-family:-apple-system,BlinkMacSystemFo
 .fi:focus,.ft:focus,.fsel:focus{border-color:#9b72f0;background:#fff;box-shadow:0 0 0 3px rgba(124,58,237,.08)}
 .fi::placeholder,.ft::placeholder{color:#ccc5e8}
 .fsel{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23b0a8d0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
-.fi[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23b0a8d0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
-.fi[list]::-webkit-calendar-picker-indicator{display:none}
+.fi[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23b0a8d0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;position:relative}
+.fi[list]::-webkit-calendar-picker-indicator{opacity:0;cursor:pointer;position:absolute;right:0;top:0;width:36px;height:100%}
 .img-drop{border:2px dashed #d4cef0;border-radius:12px;padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s;position:relative;background:#faf9fe}
 .img-drop:hover,.img-drop.dragover{border-color:#9b72f0;background:#f5f0ff}
 .img-drop.dragover{border-style:solid;box-shadow:0 0 0 3px rgba(124,58,237,.1)}
@@ -641,13 +641,12 @@ async function loadAndShowApp(){
 
 function renderNav(){
   const av=document.getElementById('navAvatar');
-  const un=document.getElementById('navUsername');
+  const initial=(currentProfile?.username||'?').slice(0,1).toUpperCase();
   if(currentProfile?.avatar_url){
-    av.innerHTML=`<img src="${esc(currentProfile.avatar_url)}">`;
+    av.innerHTML=`<img src="${esc(currentProfile.avatar_url)}" onerror="this.remove();this.parentElement.textContent='${initial}'">`;
   }else{
-    av.textContent=(currentProfile?.username||'?').slice(0,1).toUpperCase();
+    av.textContent=initial;
   }
-  un.textContent=currentProfile?.username||'';
   document.getElementById('btnAdmin').style.display=isAdmin()?'':'none';
 }
 
@@ -757,7 +756,7 @@ function render(){
   if(genders.length){fr+=`<span class="filter-label">性别</span>`;fr+=genders.map(g=>`<button class="tag-btn${activeGender===g?' active':''}" data-gender="${esc(g)}" onclick="setGender(this.dataset.gender)">${esc(g)}</button>`).join('')}
   if(genders.length&&races.length)fr+=`<div class="filter-sep"></div>`;
   if(races.length){fr+=`<span class="filter-label">种族</span>`;fr+=races.map(r=>`<button class="tag-btn${activeRace===r?' active':''}" data-race="${esc(r)}" onclick="setRace(this.dataset.race)">${esc(r)}</button>`).join('')}
-  const sOpts=[['name','角色名'],['time','添加时间'],...(activeWork===null?[['work','作品分类']]:[])];
+  const sOpts=[['name','角色名'],['time','添加时间']];
   fr+=`<div class="ctrl-group">
     <select class="sort-sel" onchange="setSort(this.value)">
       <option value=""${!sortBy?' selected':''}>默认顺序</option>
