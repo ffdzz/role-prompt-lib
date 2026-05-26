@@ -635,9 +635,11 @@ async function loadChars(){
 
 async function loadWorkOrder(){
   let r=await sb.from('work_order').select('order_data,card_order').eq('id',1).single();
-  if(r.error)r=await sb.from('work_order').select('order_data').eq('id',1).single();
+  if(r.error){console.warn('[loadWorkOrder] 第一次查询失败:',r.error.message);r=await sb.from('work_order').select('order_data').eq('id',1).single()}
+  if(r.error)console.error('[loadWorkOrder] 查询失败:',r.error.message);
   workOrder=r.data?.order_data||[];
   cardOrder=r.data?.card_order||[];
+  console.log('[loadWorkOrder] workOrder长度:',workOrder.length,'cardOrder长度:',cardOrder.length);
 }
 
 async function saveWorkOrder(){
@@ -647,7 +649,10 @@ async function saveWorkOrder(){
 
 async function saveCardOrder(){
   if(!isAdmin())return;
-  try{await sb.from('work_order').upsert({id:1,card_order:cardOrder},{onConflict:'id'})}catch(e){console.error('saveCardOrder:',e)}
+  console.log('[saveCardOrder] 准备保存，cardOrder长度:',cardOrder.length);
+  const{error}=await sb.from('work_order').upsert({id:1,card_order:cardOrder},{onConflict:'id'});
+  if(error)console.error('[saveCardOrder] 保存失败:',error.message,error.details,error.hint);
+  else console.log('[saveCardOrder] 保存成功');
 }
 
 async function logActivity(action,details){
