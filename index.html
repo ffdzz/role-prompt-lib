@@ -198,44 +198,6 @@ body{background:#f4f3fa;color:#1e1b3a;font-family:-apple-system,BlinkMacSystemFo
 
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#f4f3fa}::-webkit-scrollbar-thumb{background:#d4cef0;border-radius:3px}
 .sidebar::-webkit-scrollbar{width:4px}
-
-/* ══ 卡片拖拽 ══ */
-.card-drag-handle{position:absolute;top:8px;left:8px;width:22px;height:22px;background:rgba(30,27,58,.5);border-radius:5px;color:#fff;font-size:13px;cursor:grab;display:none;align-items:center;justify-content:center;z-index:3;user-select:none}
-.card:hover .card-drag-handle{display:flex}
-.card.card-dragging{opacity:.4;transform:scale(.97)!important;box-shadow:none!important}
-.card.card-drag-over-top{border-top:3px solid #7c3aed}
-.card.card-drag-over-bottom{border-bottom:3px solid #7c3aed}
-
-/* ══ 移动端 ══ */
-@media(max-width:768px){
-  .nav{padding:0 .75rem;height:52px}
-  .nav-username{max-width:70px}
-  .btn-add{padding:7px 12px;font-size:13px}
-  .btn-nav{padding:6px 10px;font-size:12px}
-  .layout{flex-direction:column}
-  .sidebar{width:100%;height:auto;min-height:unset;position:static;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:.4rem 0;gap:0;border-right:none;border-bottom:1px solid #ebe8f8}
-  .sidebar::-webkit-scrollbar{height:3px}
-  .sidebar-title,.sb-search-wrap,.sb-divider,.sb-mv-group,.sb-badge{display:none!important}
-  .sb-item{padding:6px 14px;white-space:nowrap;border-left:none;border-bottom:3px solid transparent;flex-shrink:0;font-size:13px}
-  .sb-item.active{border-left-color:transparent;border-bottom-color:#7c3aed}
-  .content{padding:.75rem}
-  .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
-  .modal,.admin-modal{border-radius:12px;padding:1.25rem;max-height:96vh}
-  .form-row{grid-template-columns:1fr 1fr}
-  .card-drag-handle{display:none!important}
-}
-@media(max-width:480px){
-  .logo-text{display:none}
-  .nav-username{display:none}
-  .nav-right{gap:6px}
-  .grid{grid-template-columns:repeat(2,1fr);gap:8px}
-  .form-row{grid-template-columns:1fr}
-  .auth-box{padding:1.5rem 1rem}
-  .card-body{padding:10px;gap:6px}
-  .card-name{font-size:14px}
-  .card-foot{padding:3px 10px 10px;gap:6px}
-  .btn-edit,.btn-del{padding:5px 10px;font-size:11px}
-}
 </style>
 </head>
 <body>
@@ -449,7 +411,6 @@ let editingId=null,pendFile=null,imgCleared=false;
 let pendSetupAvatar=null;
 let adminCurTab='users';
 let _sbDragWork=null,_sbDragEl=null;
-let cardOrder=[];
 const TX={};
 
 // ══ 工具 ══
@@ -624,20 +585,13 @@ async function loadChars(){
 }
 
 async function loadWorkOrder(){
-  let r=await sb.from('work_order').select('order_data,card_order').eq('id',1).single();
-  if(r.error)r=await sb.from('work_order').select('order_data').eq('id',1).single();
-  workOrder=r.data?.order_data||[];
-  cardOrder=r.data?.card_order||[];
+  const{data}=await sb.from('work_order').select('order_data').eq('id',1).single();
+  workOrder=data?.order_data||[];
 }
 
 async function saveWorkOrder(){
   if(!isAdmin())return;
   await sb.from('work_order').update({order_data:workOrder}).eq('id',1);
-}
-
-async function saveCardOrder(){
-  if(!isAdmin())return;
-  try{await sb.from('work_order').update({card_order:cardOrder}).eq('id',1)}catch{}
 }
 
 async function logActivity(action,details){
@@ -741,20 +695,6 @@ function render(){
       if(sortBy==='work'&&!activeWork)return dir*(a.work||'').localeCompare(b.work||'','zh');
       return 0;
     });
-  }else if(activeWork===null){
-    const wIdx={};workOrder.forEach((w,i)=>wIdx[w]=i);
-    list.sort((a,b)=>{
-      const wa=a.work?(wIdx[a.work]??9999):9999,wb=b.work?(wIdx[b.work]??9999):9999;
-      if(wa!==wb)return wa-wb;
-      return new Date(b.created_at||0)-new Date(a.created_at||0);
-    });
-  }else{
-    list.sort((a,b)=>{
-      const ia=cardOrder.indexOf(a.id),ib=cardOrder.indexOf(b.id);
-      if(ia!==-1&&ib!==-1)return ia-ib;
-      if(ia!==-1)return-1;if(ib!==-1)return 1;
-      return new Date(b.created_at||0)-new Date(a.created_at||0);
-    });
   }
   document.getElementById('countEl').textContent=`共 ${list.length} 个角色`;
   const admin=isAdmin();
@@ -768,10 +708,8 @@ function render(){
     const metaHtml=meta?`<div class="card-meta">${meta}</div>`:'';
     const imgUrl=c.image_file?getImgUrl(c.image_file):null;
     const ox=c.img_x??50,oy=c.img_y??50;
-    const dragA=admin?` draggable="true" ondragstart="cardDragStart(event,${c.id})" ondragover="cardDragOver(event)" ondrop="cardDrop(event)" ondragend="cardDragEnd(event)"`:'';
-    return`<div class="card" id="card_${c.id}" data-cid="${c.id}"${dragA}>
+    return`<div class="card" id="card_${c.id}">
       <div class="card-img" id="cbox_${c.id}">
-        ${admin?`<div class="card-drag-handle" title="拖拽排序">⠿</div>`:''}
         ${imgUrl?`<img id="ci_${c.id}" src="${esc(imgUrl)}" style="object-position:${ox}% ${oy}%">`:''}
         <span class="card-img-ph" style="display:${imgUrl?'none':'flex'}">${c.image_file?'⋯':'✦'}</span>
         ${c.image_file&&admin?`<button class="card-img-adj" onclick="toggleAdj(${c.id},event)">⤢</button>`:''}
@@ -1015,47 +953,6 @@ function sbDragStart(e,work){_sbDragWork=work;_sbDragEl=e.currentTarget;e.dataTr
 function sbDragEnd(e){if(_sbDragEl)_sbDragEl.classList.remove('sb-dragging');_sbDragWork=null;_sbDragEl=null;document.querySelectorAll('.sb-drag-over-top,.sb-drag-over-bottom').forEach(el=>el.classList.remove('sb-drag-over-top','sb-drag-over-bottom'))}
 function sbItemDragOver(e){if(!_sbDragWork)return;e.preventDefault();e.stopPropagation();const t=e.currentTarget;if(t.dataset.work===_sbDragWork)return;document.querySelectorAll('.sb-drag-over-top,.sb-drag-over-bottom').forEach(el=>el.classList.remove('sb-drag-over-top','sb-drag-over-bottom'));const r=t.getBoundingClientRect();t.classList.add(e.clientY<r.top+r.height/2?'sb-drag-over-top':'sb-drag-over-bottom')}
 function sbItemDrop(e){e.preventDefault();e.stopPropagation();if(!_sbDragWork)return;document.querySelectorAll('.sb-drag-over-top,.sb-drag-over-bottom').forEach(el=>el.classList.remove('sb-drag-over-top','sb-drag-over-bottom'));const tw=e.currentTarget.dataset.work;if(!tw||tw===_sbDragWork)return;const r=e.currentTarget.getBoundingClientRect();const before=e.clientY<r.top+r.height/2;const fi=workOrder.indexOf(_sbDragWork);let ti=workOrder.indexOf(tw);if(fi===-1||ti===-1)return;workOrder.splice(fi,1);if(ti>fi)ti--;workOrder.splice(before?ti:ti+1,0,_sbDragWork);saveWorkOrder();_sbDragWork=null;_sbDragEl=null;renderSidebar()}
-
-// ══ 卡片拖拽排序（仅管理员） ══
-let _cardDragId=null,_cardDragEl=null;
-function cardDragStart(e,id){
-  if(adjState&&adjState.id===id){e.preventDefault();return}
-  _cardDragId=id;_cardDragEl=e.currentTarget;
-  e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(id));
-  setTimeout(()=>{if(_cardDragEl)_cardDragEl.classList.add('card-dragging')},0);
-}
-function cardDragEnd(e){
-  if(_cardDragEl)_cardDragEl.classList.remove('card-dragging');
-  _cardDragId=null;_cardDragEl=null;
-  document.querySelectorAll('.card-drag-over-top,.card-drag-over-bottom').forEach(el=>el.classList.remove('card-drag-over-top','card-drag-over-bottom'));
-}
-function cardDragOver(e){
-  if(!_cardDragId)return;
-  e.preventDefault();e.stopPropagation();
-  const t=e.currentTarget;
-  if(String(t.dataset.cid)===String(_cardDragId))return;
-  document.querySelectorAll('.card-drag-over-top,.card-drag-over-bottom').forEach(el=>el.classList.remove('card-drag-over-top','card-drag-over-bottom'));
-  const r=t.getBoundingClientRect();
-  t.classList.add(e.clientY<r.top+r.height/2?'card-drag-over-top':'card-drag-over-bottom');
-}
-function cardDrop(e){
-  e.preventDefault();e.stopPropagation();
-  document.querySelectorAll('.card-drag-over-top,.card-drag-over-bottom').forEach(el=>el.classList.remove('card-drag-over-top','card-drag-over-bottom'));
-  if(!_cardDragId)return;
-  const targetId=Number(e.currentTarget.dataset.cid);
-  if(!targetId||targetId===_cardDragId){_cardDragId=null;_cardDragEl=null;return}
-  const r=e.currentTarget.getBoundingClientRect();
-  const before=e.clientY<r.top+r.height/2;
-  const renderedIds=[...document.querySelectorAll('.card[data-cid]')].map(el=>Number(el.dataset.cid));
-  const newRendered=renderedIds.filter(id=>id!==_cardDragId);
-  const targetIdx=newRendered.indexOf(targetId);
-  if(targetIdx===-1){_cardDragId=null;_cardDragEl=null;return}
-  newRendered.splice(before?targetIdx:targetIdx+1,0,_cardDragId);
-  const nonRendered=cardOrder.filter(id=>!renderedIds.includes(id));
-  cardOrder=[...newRendered,...nonRendered.filter(id=>!newRendered.includes(id))];
-  _cardDragId=null;_cardDragEl=null;
-  saveCardOrder();render();
-}
 
 // ══ 管理面板 ══
 async function openAdminModal(){
