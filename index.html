@@ -222,16 +222,22 @@ body{background:#f4f3fa;color:#1e1b3a;font-family:-apple-system,BlinkMacSystemFo
   .btn-add{padding:7px 12px;font-size:13px}
   .btn-nav{padding:6px 10px;font-size:12px}
   .layout{flex-direction:column}
-  .sidebar{width:100%;height:auto;min-height:unset;position:static;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:.4rem 0;gap:0;border-right:none;border-bottom:1px solid #ebe8f8}
-  .sidebar::-webkit-scrollbar{height:3px}
-  .sidebar-title,.sb-search-wrap,.sb-divider,.sb-mv-group,.sb-badge{display:none!important}
-  .sb-item{padding:6px 14px;white-space:nowrap;border-left:none;border-bottom:3px solid transparent;flex-shrink:0;font-size:13px}
-  .sb-item.active{border-left-color:transparent;border-bottom-color:#7c3aed}
+  .sidebar{width:100%;height:auto;min-height:unset;position:static;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:.3rem .5rem;gap:4px;border-right:none;border-bottom:1px solid #ebe8f8;align-items:center}
+  .sidebar::-webkit-scrollbar{height:2px}
+  .sidebar-title,.sb-search-wrap,.sb-divider,.sb-mv-group,.sb-badge,.sb-cnt{display:none!important}
+  .sb-item{padding:4px 10px;white-space:nowrap;border-left:none;border-bottom:none;border-radius:20px;flex-shrink:0;font-size:12px;background:transparent;border:1.5px solid transparent}
+  .sb-item:hover{background:#f0ecfe;border-color:#e2ddf5}
+  .sb-item.active{border-left-color:transparent;background:#7c3aed;color:#fff;font-weight:600;border-color:#7c3aed}
+  .sb-item.active:hover{background:#6d28d9}
   .content{padding:.75rem}
   .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
   .modal,.admin-modal{border-radius:12px;padding:1.25rem;max-height:96vh}
   .form-row{grid-template-columns:1fr 1fr}
   .drag-handle,.card-order-badge,.card-order-actions{display:none!important}
+  #adminContent{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .admin-table{min-width:460px;font-size:12px}
+  .admin-table th,.admin-table td{padding:7px 8px}
+  .log-details{max-width:120px}
 }
 @media(max-width:480px){
   .logo-text{display:none}
