@@ -151,8 +151,13 @@ body{background:#f4f3fa;color:#1e1b3a;font-family:-apple-system,BlinkMacSystemFo
 .fi:focus,.ft:focus,.fsel:focus{border-color:#9b72f0;background:#fff;box-shadow:0 0 0 3px rgba(124,58,237,.08)}
 .fi::placeholder,.ft::placeholder{color:#ccc5e8}
 .fsel{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23b0a8d0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
-.fi[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23b0a8d0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;position:relative}
-.fi[list]::-webkit-calendar-picker-indicator{opacity:0;cursor:pointer;position:absolute;right:0;top:0;width:36px;height:100%}
+.combo-wrap{position:relative}
+.combo-arrow{position:absolute;right:13px;top:50%;transform:translateY(-50%);pointer-events:none;color:#b0a8d0;font-size:11px}
+.combo-drop{position:absolute;top:calc(100% + 3px);left:0;right:0;background:#fff;border:1.5px solid #9b72f0;border-radius:10px;box-shadow:0 8px 24px rgba(110,80,220,.12);z-index:200;max-height:160px;overflow-y:auto;display:none}
+.combo-drop.open{display:block}
+.combo-opt{padding:8px 14px;font-size:13px;color:#3a3460;cursor:pointer;transition:background .1s}
+.combo-opt:hover,.combo-opt:active{background:#f0ecfe;color:#7c3aed}
+.combo-empty{padding:8px 14px;font-size:12px;color:#c4bce0}
 .img-drop{border:2px dashed #d4cef0;border-radius:12px;padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s;position:relative;background:#faf9fe}
 .img-drop:hover,.img-drop.dragover{border-color:#9b72f0;background:#f5f0ff}
 .img-drop.dragover{border-style:solid;box-shadow:0 0 0 3px rgba(124,58,237,.1)}
@@ -414,8 +419,11 @@ body{background:#f4f3fa;color:#1e1b3a;font-family:-apple-system,BlinkMacSystemFo
       <div class="form-row">
         <div class="field">
           <label class="lbl">作品</label>
-          <input class="fi" id="fWork" list="workList" placeholder="输入或选择" autocomplete="off">
-          <datalist id="workList"></datalist>
+          <div class="combo-wrap">
+            <input class="fi" id="fWork" placeholder="输入或选择" autocomplete="off" style="padding-right:32px" onfocus="comboOpen('fWork','work')" oninput="comboOpen('fWork','work')" onblur="comboClose('fWork')">
+            <span class="combo-arrow">▾</span>
+            <div class="combo-drop" id="fWork_drop"></div>
+          </div>
         </div>
         <div class="field">
           <label class="lbl">性别</label>
@@ -427,8 +435,11 @@ body{background:#f4f3fa;color:#1e1b3a;font-family:-apple-system,BlinkMacSystemFo
         </div>
         <div class="field">
           <label class="lbl">种族</label>
-          <input class="fi" id="fRace" list="raceList" placeholder="输入或选择" autocomplete="off">
-          <datalist id="raceList"></datalist>
+          <div class="combo-wrap">
+            <input class="fi" id="fRace" placeholder="输入或选择" autocomplete="off" style="padding-right:32px" onfocus="comboOpen('fRace','race')" oninput="comboOpen('fRace','race')" onblur="comboClose('fRace')">
+            <span class="combo-arrow">▾</span>
+            <div class="combo-drop" id="fRace_drop"></div>
+          </div>
         </div>
       </div>
       <div class="field">
@@ -933,11 +944,26 @@ document.addEventListener('mouseup',async e=>{
 });
 
 // ══ 弹窗 ══
-function updateDataLists(){
-  const works=[...new Set(chars.map(c=>c.work).filter(Boolean))].sort();
-  document.getElementById('workList').innerHTML=works.map(w=>`<option value="${esc(w)}">`).join('');
-  const races=[...new Set(chars.map(c=>c.race).filter(Boolean))].sort();
-  document.getElementById('raceList').innerHTML=races.map(r=>`<option value="${esc(r)}">`).join('');
+function updateDataLists(){}
+function comboOpen(id,type){
+  const inp=document.getElementById(id);
+  const drop=document.getElementById(id+'_drop');
+  if(!drop)return;
+  const all=type==='work'
+    ?[...new Set(chars.map(c=>c.work).filter(Boolean))].sort()
+    :[...new Set(chars.map(c=>c.race).filter(Boolean))].sort();
+  const q=inp.value.toLowerCase();
+  const opts=q?all.filter(o=>o.toLowerCase().includes(q)):all;
+  if(!opts.length){drop.innerHTML=`<div class="combo-empty">暂无已有选项</div>`;drop.classList.add('open');return}
+  drop.innerHTML=opts.map(o=>`<div class="combo-opt" data-v="${esc(o)}" onmousedown="comboPick('${id}',this.dataset.v)">${esc(o)}</div>`).join('');
+  drop.classList.add('open');
+}
+function comboPick(id,val){
+  document.getElementById(id).value=val;
+  document.getElementById(id+'_drop').classList.remove('open');
+}
+function comboClose(id){
+  setTimeout(()=>{const d=document.getElementById(id+'_drop');if(d)d.classList.remove('open')},150);
 }
 
 function resetForm(){
