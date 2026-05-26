@@ -511,8 +511,9 @@ async function afterAuth(){
     await loadAndShowApp();
     await logActivity('visit',null);
   }else{
-    showScreen('setupScreen');
-    setTimeout(()=>document.getElementById('setupUsername').focus(),100);
+    await sb.auth.signOut();
+    currentUser=null;
+    showScreen('authScreen');
   }
 }
 
