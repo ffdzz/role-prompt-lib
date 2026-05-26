@@ -208,6 +208,12 @@ body{background:#f4f3fa;color:#1e1b3a;font-family:-apple-system,BlinkMacSystemFo
 .drag-handle:active{cursor:grabbing}
 .card.card-dragging{opacity:0;pointer-events:none}
 .card.drop-slot{background:rgba(124,58,237,.06)!important;border:2px dashed #a78bfa!important;box-shadow:none!important;transform:none!important;transition:none!important;pointer-events:none}
+.card-order-badge{position:absolute;top:5px;left:8px;min-width:18px;height:18px;border-radius:4px;background:rgba(30,27,58,.55);color:#fff;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center;z-index:3;cursor:pointer;padding:0 4px;user-select:none}
+.card:hover .card-order-badge{display:flex}
+.card-order-actions{position:absolute;top:5px;right:8px;display:none;gap:3px;z-index:3}
+.card:hover .card-order-actions{display:flex}
+.card-order-btn{width:18px;height:18px;border-radius:4px;background:rgba(30,27,58,.55);border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
+.card-order-btn:hover{background:rgba(124,58,237,.85)}
 
 /* ══ 移动端 ══ */
 @media(max-width:768px){
@@ -225,7 +231,7 @@ body{background:#f4f3fa;color:#1e1b3a;font-family:-apple-system,BlinkMacSystemFo
   .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
   .modal,.admin-modal{border-radius:12px;padding:1.25rem;max-height:96vh}
   .form-row{grid-template-columns:1fr 1fr}
-  .drag-handle{display:none!important}
+  .drag-handle,.card-order-badge,.card-order-actions{display:none!important}
 }
 @media(max-width:480px){
   .logo-text{display:none}
@@ -750,6 +756,9 @@ function render(){
     list.sort((a,b)=>{
       const wa=a.work?(wIdx[a.work]??9999):9999,wb=b.work?(wIdx[b.work]??9999):9999;
       if(wa!==wb)return wa-wb;
+      const ia=cardOrder.indexOf(a.id),ib=cardOrder.indexOf(b.id);
+      if(ia!==-1&&ib!==-1)return ia-ib;
+      if(ia!==-1)return-1;if(ib!==-1)return 1;
       return new Date(b.created_at||0)-new Date(a.created_at||0);
     });
   }else{
@@ -764,7 +773,8 @@ function render(){
   const admin=isAdmin();
   const g=document.getElementById('grid');
   if(!list.length){g.innerHTML=`<div class="empty"><div class="empty-icon">✦</div><p>${chars.length?'没有匹配结果':'还没有角色，点右上角添加吧！'}</p></div>`;return}
-  g.innerHTML=list.map(c=>{
+  g.innerHTML=list.map((c,idx)=>{
+    const pos=idx+1;
     let meta='';
     if(c.work)meta+=`<span class="chip-work">${esc(c.work)}</span>`;
     if(c.gender){const cls=c.gender==='女'?'chip-gender-f':c.gender==='男'?'chip-gender-m':'chip-gender-o';meta+=`<span class="${cls}">${esc(c.gender)}</span>`}
@@ -773,7 +783,7 @@ function render(){
     const imgUrl=c.image_file?getImgUrl(c.image_file):null;
     const ox=c.img_x??50,oy=c.img_y??50;
     return`<div class="card" id="card_${c.id}">
-      ${admin?`<div class="drag-handle" onmousedown="startCardDrag(${c.id},event)" title="拖动排序"></div>`:''}
+      ${admin?`<div class="card-order-badge" id="cob_${c.id}" ondblclick="startCardBadgeEdit(${c.id},this,event)" title="双击修改排序位置">${pos}</div><div class="drag-handle" onmousedown="startCardDrag(${c.id},event)" title="拖动排序"></div><div class="card-order-actions"><button class="card-order-btn" onclick="moveCardToTop(${c.id},event)" title="置顶">⇈</button><button class="card-order-btn" onclick="moveCardToBottom(${c.id},event)" title="置尾">⇊</button></div>`:''}
       <div class="card-img" id="cbox_${c.id}">
         ${imgUrl?`<img id="ci_${c.id}" src="${esc(imgUrl)}" style="object-position:${ox}% ${oy}%">`:''}
         <span class="card-img-ph" style="display:${imgUrl?'none':'flex'}">${c.image_file?'⋯':'✦'}</span>
@@ -1009,6 +1019,7 @@ async function doSubmit(e){
       const{error}=await sb.from('characters').insert(nc);
       if(error)throw error;
       chars.unshift(nc);
+      cardOrder.unshift(ncId);await saveCardOrder();
       await logActivity('add_character',{name,id:ncId});
       closeModal();render();
     }
@@ -1052,6 +1063,43 @@ function sbDragStart(e,work){_sbDragWork=work;_sbDragEl=e.currentTarget;e.dataTr
 function sbDragEnd(e){if(_sbDragEl)_sbDragEl.classList.remove('sb-dragging');_sbDragWork=null;_sbDragEl=null;document.querySelectorAll('.sb-drag-over-top,.sb-drag-over-bottom').forEach(el=>el.classList.remove('sb-drag-over-top','sb-drag-over-bottom'))}
 function sbItemDragOver(e){if(!_sbDragWork)return;e.preventDefault();e.stopPropagation();const t=e.currentTarget;if(t.dataset.work===_sbDragWork)return;document.querySelectorAll('.sb-drag-over-top,.sb-drag-over-bottom').forEach(el=>el.classList.remove('sb-drag-over-top','sb-drag-over-bottom'));const r=t.getBoundingClientRect();t.classList.add(e.clientY<r.top+r.height/2?'sb-drag-over-top':'sb-drag-over-bottom')}
 function sbItemDrop(e){e.preventDefault();e.stopPropagation();if(!_sbDragWork)return;document.querySelectorAll('.sb-drag-over-top,.sb-drag-over-bottom').forEach(el=>el.classList.remove('sb-drag-over-top','sb-drag-over-bottom'));const tw=e.currentTarget.dataset.work;if(!tw||tw===_sbDragWork)return;const r=e.currentTarget.getBoundingClientRect();const before=e.clientY<r.top+r.height/2;const fi=workOrder.indexOf(_sbDragWork);let ti=workOrder.indexOf(tw);if(fi===-1||ti===-1)return;workOrder.splice(fi,1);if(ti>fi)ti--;workOrder.splice(before?ti:ti+1,0,_sbDragWork);saveWorkOrder();_sbDragWork=null;_sbDragEl=null;renderSidebar()}
+
+// ══ 卡片位置操作（仅管理员） ══
+function startCardBadgeEdit(id,el,e){
+  if(!isAdmin())return;
+  e.stopPropagation();if(el.querySelector('input'))return;
+  const grid=document.getElementById('grid');
+  const renderedIds=[...grid.querySelectorAll('.card[id^="card_"]')].map(c=>parseInt(c.id.replace('card_','')));
+  const curPos=renderedIds.indexOf(id)+1,total=renderedIds.length;
+  const inp=document.createElement('input');
+  inp.type='number';inp.min=1;inp.max=total;inp.value=curPos;
+  inp.style.cssText='width:28px;height:14px;border:none;background:transparent;color:#fff;font-size:10px;font-weight:700;text-align:center;outline:none;padding:0;-moz-appearance:textfield';
+  el.textContent='';el.appendChild(inp);inp.focus();inp.select();
+  let done=false;
+  function commit(){if(done)return;done=true;const n=parseInt(inp.value);if(!isNaN(n)&&n>=1&&n<=total)moveCardToPosition(id,n);else render()}
+  inp.addEventListener('keydown',ev=>{ev.stopPropagation();if(ev.key==='Enter')commit();else if(ev.key==='Escape'){done=true;render()}});
+  inp.addEventListener('blur',commit);
+}
+
+function moveCardToPosition(id,newPos){
+  const grid=document.getElementById('grid');
+  const renderedIds=[...grid.querySelectorAll('.card[id^="card_"]')].map(c=>parseInt(c.id.replace('card_','')));
+  const total=renderedIds.length;
+  const target=Math.max(0,Math.min(total-1,newPos-1));
+  const curIdx=renderedIds.indexOf(id);if(curIdx===-1)return;
+  renderedIds.splice(curIdx,1);renderedIds.splice(target,0,id);
+  const renderedSet=new Set(renderedIds);
+  const nonRendered=cardOrder.filter(x=>!renderedSet.has(x));
+  cardOrder=[...renderedIds,...nonRendered.filter(x=>!renderedIds.includes(x))];
+  saveCardOrder();render();
+}
+
+function moveCardToTop(id,e){if(!isAdmin())return;e.stopPropagation();moveCardToPosition(id,1)}
+function moveCardToBottom(id,e){
+  if(!isAdmin())return;e.stopPropagation();
+  const n=document.getElementById('grid').querySelectorAll('.card[id^="card_"]').length;
+  moveCardToPosition(id,n);
+}
 
 // ══ 卡片拖拽排序（仅管理员） ══
 function startCardDrag(id,e){
