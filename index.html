@@ -10,14 +10,17 @@ body{background:#f4f3fa;color:#1e1b3a;font-family:-apple-system,BlinkMacSystemFo
 
 /* ══ Auth ══ */
 .full-center{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#f0ecfc,#e8e4f8)}
-.auth-box{background:#fff;border-radius:24px;padding:3rem 2.5rem;text-align:center;width:100%;max-width:420px;box-shadow:0 8px 40px rgba(110,80,220,.12);border:1.5px solid #ebe8f8}
-.auth-icon{font-size:3rem;color:#7c3aed;margin-bottom:1rem}
-.auth-title{font-size:1.5rem;font-weight:700;margin-bottom:.5rem;letter-spacing:-.01em}
-.auth-desc{font-size:14px;color:#9b8ec4;margin-bottom:2rem;line-height:1.7}
-.auth-err{color:#f43f5e;font-size:13px;margin-top:.75rem;min-height:20px}
-.btn-main{width:100%;padding:13px 24px;border-radius:12px;border:none;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(124,58,237,.4);transition:all .2s}
+.auth-box{background:#fff;border-radius:24px;padding:2.5rem 2.5rem;text-align:center;width:100%;max-width:400px;box-shadow:0 8px 40px rgba(110,80,220,.12);border:1.5px solid #ebe8f8}
+.auth-icon{font-size:2.5rem;color:#7c3aed;margin-bottom:.75rem}
+.auth-title{font-size:1.4rem;font-weight:700;margin-bottom:1.25rem;letter-spacing:-.01em}
+.auth-err{color:#f43f5e;font-size:13px;margin-top:.6rem;min-height:18px;text-align:left}
+.btn-main{width:100%;padding:12px 24px;border-radius:12px;border:none;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(124,58,237,.4);transition:all .2s}
 .btn-main:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,58,237,.5)}
 .btn-main:disabled{opacity:.6;transform:none;cursor:not-allowed}
+.auth-tabs{display:flex;gap:4px;background:#f4f3fa;border-radius:10px;padding:4px;margin-bottom:1.25rem}
+.auth-tab{flex:1;padding:8px;border:none;border-radius:8px;background:none;color:#9b8ec4;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;font-family:inherit}
+.auth-tab.active{background:#fff;color:#7c3aed;font-weight:600;box-shadow:0 2px 8px rgba(110,80,220,.1)}
+.auth-form{display:flex;flex-direction:column;gap:10px;text-align:left}
 
 /* ══ Setup ══ */
 .setup-form{display:flex;flex-direction:column;gap:14px;text-align:left}
@@ -204,15 +207,27 @@ body{background:#f4f3fa;color:#1e1b3a;font-family:-apple-system,BlinkMacSystemFo
   <div class="auth-box">
     <div class="auth-icon">✦</div>
     <div class="auth-title">角色提示词库</div>
-    <div class="auth-desc">输入邮箱，我们会向你发送登录链接<br>无需密码，点击链接即可进入</div>
-    <div id="authForm" style="display:flex;flex-direction:column;gap:10px">
-      <input class="fi" id="emailInput" type="email" placeholder="输入邮箱地址" style="width:100%;text-align:left" onkeydown="if(event.key==='Enter')sendMagicLink()">
-      <button class="btn-main" id="signInBtn" onclick="sendMagicLink()">发送登录链接</button>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">登录</button>
+      <button class="auth-tab" id="tabReg" onclick="switchAuthTab('reg')">注册</button>
     </div>
-    <div id="authSent" style="display:none;margin-top:8px">
-      <div style="font-size:14px;color:#7c3aed;margin-bottom:10px;font-weight:600">✓ 链接已发送，请查收邮件</div>
-      <div style="font-size:12px;color:#b0a8d0;margin-bottom:16px;line-height:1.7">点击邮件中的登录链接即可进入<br>链接有效期 1 小时</div>
-      <button onclick="resetAuthForm()" style="background:none;border:none;color:#9b72f0;font-size:13px;cursor:pointer;font-family:inherit">← 重新输入邮箱</button>
+    <!-- 登录表单 -->
+    <div id="loginForm" class="auth-form">
+      <input class="fi" id="loginUsername" placeholder="用户名" style="width:100%" onkeydown="if(event.key==='Enter')login()">
+      <input class="fi" id="loginPassword" type="password" placeholder="密码" style="width:100%" onkeydown="if(event.key==='Enter')login()">
+      <button class="btn-main" id="loginBtn" onclick="login()">登录</button>
+    </div>
+    <!-- 注册表单 -->
+    <div id="regForm" class="auth-form" style="display:none">
+      <div style="text-align:center;margin-bottom:4px">
+        <div class="avatar-preview" id="regAvatarPreview" onclick="document.getElementById('regAvatarInput').click()" title="点击上传头像">?</div>
+        <div style="font-size:12px;color:#b0a8d0;margin-top:6px">点击上传头像（可选）</div>
+        <input type="file" id="regAvatarInput" accept="image/*" style="display:none" onchange="onRegAvatar(event)">
+      </div>
+      <input class="fi" id="regUsername" placeholder="用户名（2-20字符）" maxlength="20" style="width:100%">
+      <input class="fi" id="regPassword" type="password" placeholder="密码（至少6位）" style="width:100%">
+      <input class="fi" id="regConfirm" type="password" placeholder="确认密码" style="width:100%" onkeydown="if(event.key==='Enter')register()">
+      <button class="btn-main" id="regBtn" onclick="register()">注册</button>
     </div>
     <div class="auth-err" id="authErr"></div>
   </div>
@@ -414,47 +429,79 @@ function showScreen(id){
 // ══ 初始化 ══
 async function init(){
   sb.auth.onAuthStateChange(async(event,session)=>{
-    if(event==='SIGNED_IN'&&session?.user&&!currentUser){
-      currentUser=session.user;
-      await afterAuth();
-    }else if(event==='SIGNED_OUT'){
-      currentUser=null;currentProfile=null;chars=[];workOrder=[];
-      showScreen('authScreen');resetAuthForm();
-    }
+    if(event==='SIGNED_OUT'){currentUser=null;currentProfile=null;chars=[];workOrder=[];showScreen('authScreen')}
   });
   const{data:{session}}=await sb.auth.getSession();
-  if(session?.user){
-    currentUser=session.user;
-    await afterAuth();
-  }else{
-    showScreen('authScreen');
-  }
+  if(session?.user){currentUser=session.user;await afterAuth()}
+  else showScreen('authScreen');
 }
 
-async function sendMagicLink(){
-  const email=document.getElementById('emailInput').value.trim();
-  if(!email){document.getElementById('authErr').textContent='请输入邮箱';return}
-  const btn=document.getElementById('signInBtn');
-  btn.disabled=true;btn.textContent='发送中...';
+function switchAuthTab(tab){
+  const isLogin=tab==='login';
+  document.getElementById('tabLogin').classList.toggle('active',isLogin);
+  document.getElementById('tabReg').classList.toggle('active',!isLogin);
+  document.getElementById('loginForm').style.display=isLogin?'flex':'none';
+  document.getElementById('regForm').style.display=isLogin?'none':'flex';
   document.getElementById('authErr').textContent='';
-  const{error}=await sb.auth.signInWithOtp({
-    email,
-    options:{emailRedirectTo:window.location.origin+window.location.pathname}
-  });
+}
+
+let pendRegAvatar=null;
+function onRegAvatar(e){
+  const file=e.target.files[0];if(!file)return;
+  pendRegAvatar=file;
+  const r=new FileReader();
+  r.onload=ev=>document.getElementById('regAvatarPreview').innerHTML=`<img src="${ev.target.result}">`;
+  r.readAsDataURL(file);
+}
+
+async function login(){
+  const username=document.getElementById('loginUsername').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  const errEl=document.getElementById('authErr');
+  if(!username||!password){errEl.textContent='请填写用户名和密码';return}
+  const btn=document.getElementById('loginBtn');
+  btn.disabled=true;btn.textContent='登录中...';errEl.textContent='';
+  const{data,error}=await sb.auth.signInWithPassword({email:username+'@promptlib.local',password});
   if(error){
-    document.getElementById('authErr').textContent=error.message;
-    btn.disabled=false;btn.textContent='发送登录链接';return;
+    errEl.textContent=error.message.includes('Invalid')?'用户名或密码错误':error.message;
+    btn.disabled=false;btn.textContent='登录';return;
   }
-  document.getElementById('authForm').style.display='none';
-  document.getElementById('authSent').style.display='block';
+  currentUser=data.user;
+  await afterAuth();
 }
 
-function resetAuthForm(){
-  document.getElementById('authForm').style.display='flex';
-  document.getElementById('authSent').style.display='none';
-  const btn=document.getElementById('signInBtn');
-  if(btn){btn.disabled=false;btn.textContent='发送登录链接'}
-  document.getElementById('authErr').textContent='';
+async function register(){
+  const username=document.getElementById('regUsername').value.trim();
+  const password=document.getElementById('regPassword').value;
+  const confirm=document.getElementById('regConfirm').value;
+  const errEl=document.getElementById('authErr');
+  if(username.length<2){errEl.textContent='用户名至少2个字符';return}
+  if(password.length<6){errEl.textContent='密码至少6位';return}
+  if(password!==confirm){errEl.textContent='两次密码不一致';return}
+  const btn=document.getElementById('regBtn');
+  btn.disabled=true;btn.textContent='注册中...';errEl.textContent='';
+  const{data,error}=await sb.auth.signUp({email:username+'@promptlib.local',password});
+  if(error){
+    errEl.textContent=error.message.includes('already registered')?'用户名已被占用':error.message;
+    btn.disabled=false;btn.textContent='注册';return;
+  }
+  currentUser=data.user;
+  let avatar_url=null;
+  if(pendRegAvatar){
+    const ext=(pendRegAvatar.name.split('.').pop()||'jpg').toLowerCase();
+    const path=`${currentUser.id}/avatar.${ext}`;
+    const{error:upErr}=await sb.storage.from('avatars').upload(path,pendRegAvatar,{upsert:true});
+    if(!upErr){const{data:u}=sb.storage.from('avatars').getPublicUrl(path);avatar_url=u.publicUrl}
+  }
+  const{error:profileError}=await sb.from('profiles').insert({id:currentUser.id,username,avatar_url});
+  if(profileError){
+    errEl.textContent=profileError.code==='23505'?'用户名已被占用，请换一个':'注册失败：'+profileError.message;
+    await sb.auth.signOut();currentUser=null;
+    btn.disabled=false;btn.textContent='注册';return;
+  }
+  currentProfile={id:currentUser.id,username,avatar_url,is_admin:false,created_at:new Date().toISOString()};
+  await logActivity('register',{username});
+  await loadAndShowApp();
 }
 
 async function afterAuth(){
